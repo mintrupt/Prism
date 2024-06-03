@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Moq;
 using Prism.Ioc;
-using Prism.Regions;
+using Prism.Navigation.Regions;
 using Xamarin.Forms;
 using Xunit;
 
@@ -16,7 +14,9 @@ namespace Prism.Forms.Regions.Tests
         [Fact]
         public void CanRegisterContentAndRetrieveIt()
         {
+            ContainerLocator.ResetContainer();
             var containerMock = new Mock<IContainerExtension>();
+            ContainerLocator.SetContainerExtension(containerMock.Object);
             containerMock.Setup(c => c.Resolve(typeof(MockContentObject))).Returns(new MockContentObject());
             var registry = new RegionViewRegistry(containerMock.Object);
 
@@ -44,7 +44,7 @@ namespace Prism.Forms.Regions.Tests
             Assert.NotNull(listener.onViewRegisteredArguments);
             Assert.NotNull(listener.onViewRegisteredArguments.GetView);
 
-            var result = listener.onViewRegisteredArguments.GetView();
+            var result = listener.onViewRegisteredArguments.GetView(containerMock.Object);
             Assert.NotNull(result);
             Assert.IsType<MockContentObject>(result);
         }
@@ -52,6 +52,8 @@ namespace Prism.Forms.Regions.Tests
         [Fact]
         public void CanRegisterContentAsDelegateAndRetrieveIt()
         {
+            ContainerLocator.ResetContainer();
+            ContainerLocator.SetContainerExtension(Mock.Of<IContainerExtension>());
             var registry = new RegionViewRegistry(null);
             var content = new MockContentObject();
 

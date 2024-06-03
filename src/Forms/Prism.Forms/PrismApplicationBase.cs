@@ -4,6 +4,7 @@ using System.Linq;
 using Prism.AppModel;
 using Prism.Behaviors;
 using Prism.Common;
+using Prism.Dialogs;
 using Prism.Events;
 using Prism.Extensions;
 using Prism.Ioc;
@@ -11,7 +12,6 @@ using Prism.Modularity;
 using Prism.Mvvm;
 using Prism.Navigation;
 using Prism.Services;
-using Prism.Services.Dialogs;
 using Xamarin.Forms;
 using Xamarin.Forms.Internals;
 
@@ -102,7 +102,7 @@ namespace Prism
         {
             ViewModelLocationProvider.SetDefaultViewModelFactory((view, type) =>
             {
-                List<(Type Type, object Instance)> overrides = new List<(Type, object)>();
+                List<(Type Type, object Instance)> overrides = [];
                 if (Container.IsRegistered<IResolverOverridesHelper>())
                 {
                     var resolver = Container.Resolve<IResolverOverridesHelper>();
@@ -140,15 +140,19 @@ namespace Prism
         /// </summary>
         protected virtual void Initialize()
         {
-            ContainerLocator.SetContainerExtension(CreateContainerExtension);
+            var initialize = ContainerLocator.TrySetContainerExtension(CreateContainerExtension());
             _containerExtension = ContainerLocator.Current;
-            RegisterRequiredTypes(_containerExtension);
-            PlatformInitializer?.RegisterTypes(_containerExtension);
-            RegisterTypes(_containerExtension);
-            _containerExtension.FinalizeExtension();
+            if (initialize)
+            {
+                RegisterRequiredTypes(_containerExtension);
+                PlatformInitializer?.RegisterTypes(_containerExtension);
+                RegisterTypes(_containerExtension);
 
-            _moduleCatalog = Container.Resolve<IModuleCatalog>();
-            ConfigureModuleCatalog(_moduleCatalog);
+                _moduleCatalog = Container.Resolve<IModuleCatalog>();
+                ConfigureModuleCatalog(_moduleCatalog);
+            }
+
+            _moduleCatalog ??= Container.Resolve<IModuleCatalog>();
 
             _containerExtension.CreateScope();
             NavigationService = _containerExtension.Resolve<INavigationService>();
@@ -168,18 +172,18 @@ namespace Prism
         /// <param name="containerRegistry"></param>
         protected virtual void RegisterRequiredTypes(IContainerRegistry containerRegistry)
         {
-            containerRegistry.RegisterSingleton<IApplicationProvider, ApplicationProvider>();
-            containerRegistry.RegisterSingleton<IApplicationStore, ApplicationStore>();
-            containerRegistry.RegisterSingleton<IEventAggregator, EventAggregator>();
-            containerRegistry.RegisterSingleton<IKeyboardMapper, KeyboardMapper>();
-            containerRegistry.RegisterSingleton<IPageDialogService, PageDialogService>();
-            containerRegistry.RegisterSingleton<IDialogService, DialogService>();
-            containerRegistry.RegisterSingleton<IDeviceService, DeviceService>();
-            containerRegistry.RegisterSingleton<IPageBehaviorFactory, PageBehaviorFactory>();
-            containerRegistry.RegisterSingleton<IModuleCatalog, ModuleCatalog>();
-            containerRegistry.RegisterSingleton<IModuleManager, ModuleManager>();
-            containerRegistry.RegisterSingleton<IModuleInitializer, ModuleInitializer>();
-            containerRegistry.RegisterScoped<INavigationService, PageNavigationService>();
+            containerRegistry.TryRegisterSingleton<IApplicationProvider, ApplicationProvider>();
+            containerRegistry.TryRegisterSingleton<IApplicationStore, ApplicationStore>();
+            containerRegistry.TryRegisterSingleton<IEventAggregator, EventAggregator>();
+            containerRegistry.TryRegisterSingleton<IKeyboardMapper, KeyboardMapper>();
+            containerRegistry.TryRegisterSingleton<IPageDialogService, PageDialogService>();
+            containerRegistry.TryRegisterSingleton<IDialogService, DialogService>();
+            containerRegistry.TryRegisterSingleton<IDeviceService, DeviceService>();
+            containerRegistry.TryRegisterSingleton<IPageBehaviorFactory, PageBehaviorFactory>();
+            containerRegistry.TryRegisterSingleton<IModuleCatalog, ModuleCatalog>();
+            containerRegistry.TryRegisterSingleton<IModuleManager, ModuleManager>();
+            containerRegistry.TryRegisterSingleton<IModuleInitializer, ModuleInitializer>();
+            containerRegistry.TryRegisterScoped<INavigationService, PageNavigationService>();
             containerRegistry.Register<INavigationService, PageNavigationService>(NavigationServiceName);
         }
 
